@@ -1,0 +1,98 @@
+from fastapi import FastAPI, HTTPException
+from scrapy.crawler import CrawlerProcess
+from scrapy.utils.project import get_project_settings
+from threading import Thread
+import json
+import os
+
+app = FastAPI()
+
+# Your spider code here
+import scrapy
+from scrapy import FormRequest
+import re
+
+class GovernSpider(scrapy.Spider):
+    name = 'govern'
+    start_urls = ['https://pib.gov.in/allRel.aspx']
+
+    def txt_cleaner(self, txt):
+        cleaned_string = txt.strip()
+        cleaned_string = cleaned_string.replace('\r', ' ').replace('\n', ' ')
+        cleaned_string = re.sub(' +', ' ', cleaned_string)
+        return cleaned_string
+
+    def parse(self, response):
+        data = {
+            # 'ctl00$Bar1$ddlregion': '3',
+            # 'ctl00$Bar1$ddlLang': '1',
+            # 'ctl00$ContentPlaceHolder1$hydregionid': '3',
+            # 'ctl00$ContentPlaceHolder1$hydLangid': '1',
+            'ctl00$ContentPlaceHolder1$ddlMinistry': '1',  # 0 means all ministries
+            'ctl00$ContentPlaceHolder1$ddlday': '2',  # 0 means all dates
+            'ctl00$ContentPlaceHolder1$ddlMonth': '7',  # 5 means may if you want to extract data for Aug put 8 for example
+            'ctl00$ContentPlaceHolder1$ddlYear': '2024',  # year
+        }
+
+        yield FormRequest.from_response(response, formdata=data, callback=self.parse_urls)
+
+    def parse_urls(self, response):
+        hrefs = response.css('ul.leftul li a::attr(href)').getall()
+        base_url = 'https://pib.gov.in'
+        all_urls_to_scrape = [base_url + href for href in hrefs]
+
+        for url in all_urls_to_scrape:
+            yield response.follow(url, callback=self.parse_article)
+
+    def parse_article(self, response):
+        all_text = response.css('.innner-page-main-about-us-content-right-part *::text').getall()
+        combined_text = ' '.join(all_text).strip()
+
+        main_content_div = response.css('div.innner-page-main-about-us-content-right-part')
+        img_src = main_content_div.css('img::attr(src)').getall()
+        iframe_src = main_content_div.css('iframe::attr(src)').getall()
+        all_image_src = img_src + iframe_src
+
+        if len(all_image_src) == 0:
+            all_image_src = "there is no image for this article"
+
+        info = {
+            'title': self.txt_cleaner(response.css("div h2::text").get()),
+            'date_posted': self.txt_cleaner(response.css('div.ReleaseDateSubHeaddateTime::text').get()),
+            'content': self.txt_cleaner(combined_text),
+            'images': all_image_src
+        }
+
+        yield info
+
+# Helper function to run Scrapy spider
+def run_spider(spider):
+    process = CrawlerProcess(settings=get_project_settings())
+    process.crawl(spider)
+    process.start()
+
+# FastAPI endpoint
+@app.get("/scrape")
+def scrape_data():
+    try:
+        # Run the spider in a separate thread
+        thread = Thread(target=run_spider, args=(GovernSpider,))
+        thread.start()
+        thread.join()
+
+        # Collect results from the spider (assuming you store them in a JSON file)
+        results = []
+        if os.path.exists('output.json'):
+            with open('output.json', 'r') as f:
+                results = json.load(f)
+        
+        return {"data": results}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Start the FastAPI application using Uvicorn server
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
