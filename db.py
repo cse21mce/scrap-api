@@ -3,7 +3,7 @@ import pymongo
 def connect_to_db():
     client = pymongo.MongoClient("mongodb://localhost:27017/")
     print("MongoDB Client:", client)
-    db = client['pibdata']
+    db = client['pib']
     return db['press_releases']
 
 def store_in_db(data, url=None):
