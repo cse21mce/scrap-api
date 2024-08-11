@@ -17,6 +17,12 @@ def convert_object_ids(data):
         return data
     
 
+@app.get("/")
+def root():
+    return {"message":"Welcome to Scrap API"}
+
+
+
 @app.get("/scrap")
 def scrape_endpoint(url: str = Query(None, description="The URL to scrape")):
     """
@@ -62,4 +68,5 @@ def scrape_endpoint(url: str = Query(None, description="The URL to scrape")):
 if __name__ == "__main__":
     import uvicorn
     # Run the FastAPI application on the specified host and port with auto-reloading enabled
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    # uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run(app)
