@@ -1,12 +1,14 @@
 import pymongo
+import os
 
 def connect_to_db():
-    client = pymongo.MongoClient("mongodb://localhost:27017/")
-    print("MongoDB Client:", client)
+    MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
+    client = pymongo.MongoClient(MONGO_URI)
+    # print("MongoDB Client:", client)
     db = client['pib']
     return db['press_releases']
 
-def store_in_db(data, url=None):
+def store_in_db(data, url=None): 
     collection = connect_to_db()
     
     if url:
