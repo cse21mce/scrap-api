@@ -14,7 +14,7 @@ pip install -r requirment.txt
 
 ## Usage
 
-1. Endpoint (/scrap) -> http://127.0.0.1:8000/scrap
+1. Endpoint (/scrape_all?start_date=[start_date]&end_date=[end_date]&ministry_id=[ministry_id]) -> http://127.0.0.1:8000/scrape_all?start_date=2024-08-24&end_date=2024-08-24&ministry_id=0'
 
 ---
 
@@ -41,7 +41,7 @@ response: [
 ]
 ```
 
-2. Endpoint (/scrap?url=[url]) -> http://127.0.0.1:8000/scrap?url=https://pib.gov.in/PressReleasePage.aspx?PRID=2040315
+2. Endpoint (/scrape_single?url=[url]) -> http://127.0.0.1:8000/scrape_single?url=https://pib.gov.in/PressReleasePage.aspx?PRID=2040315
 
 ---
 
