@@ -54,11 +54,11 @@ The PIB Press Releases Scraper is a FastAPI-based application designed to scrape
 
 Ensure you have the following environment variables set up for database configuration and other settings:
 
-- DATABASE_URI: The URI for your MongoDB instance.
+- MONGO_URI: The URI for your MongoDB instance.
 
 You can use a .env file to manage these variables:
 
-    DATABASE_URI=mongodb://localhost:27017/mydatabase
+    MONGO_URI=mongodb://localhost:27017/mydatabase
 
 ### Requirements File
 
