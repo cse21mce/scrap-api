@@ -77,7 +77,6 @@ def scrape_all_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
     
 if __name__ == "__main__":
-    import uvicorn
     # Run the FastAPI application on the specified host and port with auto-reloading enabled
     # uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
-    uvicorn.run(app)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
