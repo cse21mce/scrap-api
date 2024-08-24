@@ -96,7 +96,7 @@ To start the FastAPI application locally, run:
 
 * Response:
 
-  ```bash
+  ```json
   response:
       {
       "title": "PM to visit Maharashtra and Rajasthan on 25th August",
@@ -125,7 +125,7 @@ To start the FastAPI application locally, run:
 
 - Response:
 
-  ```bash
+  ```json
   response: [
       {
           "url": "https://pib.gov.in/PressReleasePage.aspx?PRID=2048409",
