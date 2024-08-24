@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from threading import Thread
 from scrap import scrape_press_release, scrape_all_releases
 from db import store_in_db
-from pymongo import ObjectId
+from bson import ObjectId
 from datetime import datetime
 from typing import Optional
 import uvicorn
