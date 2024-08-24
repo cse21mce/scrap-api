@@ -1,46 +1,57 @@
 import pymongo
 import os
+import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 def connect_to_db():
-    MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
-    client = pymongo.MongoClient(MONGO_URI)
-    # print("MongoDB Client:", client)
-    db = client['pib']
-    return db['press_releases']
-
-def store_in_db(data, url=None): 
-    collection = connect_to_db()
+    """
+    Connects to the MongoDB database.
     
-    if url:
-        # Assuming data is a single dictionary
-        filter_query = {"title": data["title"]}
-        update_query = {"$set": data}
+    Returns:
+    - collection: The MongoDB collection object.
+    """
+    try:
+        MONGO_URI = os.getenv("MONGO_URI")
+        client = pymongo.MongoClient(MONGO_URI)
+        db = client['pib']
+        return db['press_releases']
+    except pymongo.errors.ConnectionError as e:
+        logger.error(f"Database connection failed: {e}")
+        return None
 
-        # Update the document if it exists, otherwise insert a new one
-        result = collection.update_one(filter_query, update_query, upsert=True)
-        if result.matched_count > 0:
-            print(f"Document with title '{data['title']}' updated successfully.")
-        else:
-            print(f"Document with title '{data['title']}' inserted successfully.")
-        
-        # Return the updated or inserted document
-        return collection.find_one(filter_query)
-    
-    else:
-        # Assuming data is a list of dictionaries
-        result_data = []
-        for item in data:
-            filter_query = {"title": item["title"]}
-            update_query = {"$set": item}
-            
-            # Update the document if it exists, otherwise insert a new one
-            result = collection.update_one(filter_query, update_query, upsert=True)
-            if result.matched_count > 0:
-                print(f"Document with title '{item['title']}' updated successfully.")
+def store_in_db(data):
+    """
+    Stores the scraped data into MongoDB.
+    If a document with the same URL exists, it updates it; otherwise, inserts a new document.
+    """
+    try:
+        collection = connect_to_db()
+        if isinstance(data, dict):
+            result = collection.update_one(
+                {'url': data['url']},
+                {'$set': data},
+                upsert=True
+            )
+            if result.upserted_id:
+                logger.info(f"Inserted new document with URL: {data['url']}")
             else:
-                print(f"Document with title '{item['title']}' inserted successfully.")
-            
-            # Append the updated or inserted document to result_data
-            result_data.append(collection.find_one(filter_query))
-        
-        return result_data
+                logger.info(f"Updated existing document with URL: {data['url']}")
+        elif isinstance(data, list):
+            for item in data:
+                collection.update_one(
+                    {'url': item['url']},
+                    {'$set': item},
+                    upsert=True
+                )
+            logger.info(f"Inserted/Updated {len(data)} documents.")
+        else:
+            logger.error("Data must be a dict or list of dicts.")
+    except Exception as e:
+        logger.error(f"Error storing data to MongoDB: {e}")
+        raise e
