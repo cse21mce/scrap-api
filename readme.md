@@ -12,6 +12,10 @@ git clone https://github.com/cse21mce/scrap-api.git
 pip install -r requirment.txt
 ```
 
+## Endpoints
+
+Endpoint (/docs) for testing API and get an overview of Endpoints
+
 ## Usage
 
 1. Endpoint (/scrape_all?start_date=[start_date]&end_date=[end_date]&ministry_id=[ministry_id]) -> http://127.0.0.1:8000/scrape_all?start_date=2024-08-24&end_date=2024-08-24&ministry_id=0'
