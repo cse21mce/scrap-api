@@ -1,8 +1,7 @@
 annotated-types==0.7.0
 anyio==4.4.0
 attrs==24.2.0
-beautifulsoup4==4.12.3
-bson==0.5.10
+beautifulsoup4==4.12.3 
 certifi==2024.7.4
 cffi==1.17.0
 charset-normalizer==3.3.2
