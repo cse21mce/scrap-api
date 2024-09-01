@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException, Query
-from threading import Thread
+# from threading import Thread
 from scrap import scrape_press_release, scrape_all_releases
 from db import store_in_db
 from bson import ObjectId
+from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
-from typing import Optional
+# from typing import Optional
 import uvicorn
 import logging
 
@@ -13,6 +14,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="PIB Press Releases Scraper", description="An API to scrape PIB press releases.", version="1.0.0")
+
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins, you can specify a list of allowed origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
 
 def convert_object_ids(data):
     """
