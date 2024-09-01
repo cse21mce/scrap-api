@@ -52,24 +52,37 @@ def get_form_data():
 
 def get_press_releases(date: datetime, ministry_id: str = '0'):
     """
-    Fetches all press releases for a specific date and ministry.
+    Fetches press releases for a specific date and ministry.
     """
     try:
-        # Prepare date components
         day = date.day
         month = date.month
         year = date.year
 
-        # Prepare payload for POST request
-        form_data = get_form_data()  # Get the form data needed for the POST request
+        # Get the initial form data
+        form_data = get_form_data()
+        if not form_data:
+            logger.error("Failed to retrieve initial form data.")
+            return []
+
+        # Update form data with selected values
         payload = {
-            'MinistryID': ministry_id,
-            'MonthID': str(month),
-            'YearID': str(year),
-            'DateID': str(day),
-            # Include the form data fetched earlier
-            **form_data
+            'ctl00$ContentPlaceHolder1$ddlMinistry': ministry_id,
+            'ctl00$ContentPlaceHolder1$ddlday': str(day),
+            'ctl00$ContentPlaceHolder1$ddlMonth': str(month),
+            'ctl00$ContentPlaceHolder1$ddlYear': str(year),
+            # Include the hidden fields
+            'ctl00$ContentPlaceHolder1$hydregionid': '3',
+            'ctl00$ContentPlaceHolder1$hydLangid': '1',
+            # If ASP.NET __EVENTTARGET and __EVENTARGUMENT are required:
+            '__EVENTTARGET': 'ctl00$ContentPlaceHolder1$ddlMinistry',  # Update based on the dropdown
+            '__EVENTARGUMENT': '',
         }
+
+        # Merge with the extracted hidden form data
+        payload.update(form_data)
+
+        # logger.info(f"Form Data Sent for {date.strftime('%Y-%m-%d')}: {payload}")
 
         headers = {
             'User-Agent': 'Mozilla/5.0',
@@ -79,12 +92,16 @@ def get_press_releases(date: datetime, ministry_id: str = '0'):
         response = session.post(BASE_URL, data=payload, headers=headers)
         response.raise_for_status()
 
-        soup = BeautifulSoup(response.content, 'html.parser')
+        # Log the request and response details
+        logger.debug(f"Request URL: {response.url}")
+        logger.debug(f"Response status code: {response.status_code}")
+        logger.debug(f"Response headers: {response.headers}")
+        logger.debug(f"HTML Content for {date.strftime('%Y-%m-%d')}: {response.text[:2000]}")
 
-        # Find all press release entries
+        soup = BeautifulSoup(response.content, 'html.parser')
         content_area = soup.find('div', class_='content-area')
         if not content_area:
-            logger.info(f"No press releases found for {date.strftime('%Y-%m-%d')}")
+            logger.warning(f"No press releases found for {date.strftime('%Y-%m-%d')}")
             return []
 
         releases = []
@@ -111,10 +128,30 @@ def get_press_releases(date: datetime, ministry_id: str = '0'):
         logger.error(f"Error fetching press releases for {date.strftime('%Y-%m-%d')}: {e}")
         return []
 
+def scrape_press_release(url: str):
+    """
+    Scrapes details from a single press release page.
+    """
+    try:
+        response = session.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Example: Extract title and content
+        title = soup.find('h1').text.strip() if soup.find('h1') else 'No Title'
+        content = soup.find('div', class_='press-content').text.strip() if soup.find('div', class_='press-content') else 'No Content'
+
+        return {
+            'title': title,
+            'url': url,
+            'content': content
+        }
+
+    except Exception as e:
+        logger.error(f"Error scraping press release at {url}: {e}")
+        return None
+    
 def scrape_all_releases(start_date: datetime, end_date: datetime, ministry_id: str = '0'):
-    """
-    Scrapes all press releases between start_date and end_date for a given ministry.
-    """
     try:
         current_date = start_date
         all_releases = []
@@ -123,7 +160,10 @@ def scrape_all_releases(start_date: datetime, end_date: datetime, ministry_id: s
         while current_date <= end_date:
             logger.info(f"Fetching releases for {current_date.strftime('%Y-%m-%d')}")
             daily_releases = get_press_releases(current_date, ministry_id)
-
+            
+            if not daily_releases:
+                logger.info(f"No releases found for {current_date.strftime('%Y-%m-%d')}")
+            
             for release in daily_releases:
                 if release['url'] not in seen_urls:
                     logger.info(f"Scraping release: {release['title']}")
@@ -134,6 +174,7 @@ def scrape_all_releases(start_date: datetime, end_date: datetime, ministry_id: s
                 else:
                     logger.info(f"Skipping duplicate URL: {release['url']}")
 
+            # Move to the next day
             current_date += timedelta(days=1)
 
         logger.info(f"Scraped a total of {len(all_releases)} releases between {start_date.strftime('%Y-%m-%d')} and {end_date.strftime('%Y-%m-%d')}")
@@ -142,7 +183,7 @@ def scrape_all_releases(start_date: datetime, end_date: datetime, ministry_id: s
     except Exception as e:
         logger.error(f"Error scraping releases between dates: {e}")
         return []
-
+    
 def scrape_press_release(url: str):
     """
     Scrapes detailed information from a single press release URL.
