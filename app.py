@@ -52,7 +52,7 @@ def scrape_single_endpoint(url: str = Query(..., description="The URL of the pre
         data = scrape_press_release(url)
         if data:
             store_in_db(data)
-            return {"message": "Scraping and storage successful.", "data": data}
+            return {"message": "Scraping and storage successful.","type":"success","success":True, "data": data}
         else:
             raise HTTPException(status_code=404, detail="No data found at the provided URL.")
     except Exception as e:
@@ -78,7 +78,7 @@ def scrape_all_endpoint(
         data = scrape_all_releases(start_dt, end_dt, ministry_id)
         if data:
             store_in_db(data)
-            return {"message": "Scraping and storage successful.", "total_releases": len(data)}
+            return {"message": "Scraping and storage successful.","type":"success","success":True, "total_releases": len(data)}
         else:
             raise HTTPException(status_code=404, detail="No press releases found for the given date range.")
     except ValueError:
